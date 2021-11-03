@@ -50,7 +50,7 @@ var endpoints = map[endpoint]string{
 	signin:              "https://idmsa.apple.com/appleauth/auth/signin",
 	authOptions:         "https://idmsa.apple.com/appleauth/auth",
 	requestSecurityCode: "https://idmsa.apple.com/appleauth/auth/verify/phone",
-	submitSecurityCode:  "https://idmsa.apple.com/appleauth/auth/verify/%s/securitycode", // codeType
+	submitSecurityCode:  "https://idmsa.apple.com/appleauth/auth/verify/%s/securitycode", // codeType, deviceID
 	trust:               "https://idmsa.apple.com/appleauth/auth/2sv/trust",
 	olympusSession:      "https://appstoreconnect.apple.com/olympus/v1/session",
 }
@@ -237,7 +237,7 @@ func (c *Client) Signin(ctx context.Context, account *Account) error {
 		return ErrInvalidUsernameOrPassword
 
 	case http.StatusUnauthorized: // 401
-		return errors.New(http.StatusText(code))
+		return fmt.Errorf("status code is %s", http.StatusText(code))
 
 	case http.StatusConflict: // 409
 		return c.handleTwoStepOrFactor(ctx, resp)
@@ -249,7 +249,7 @@ func (c *Client) Signin(ctx context.Context, account *Account) error {
 		return ErrRequiredPrivacyAck
 
 	case http.StatusBadGateway: // 502
-		return errors.New("temporary server error, try again later")
+		return errors.New("temporary Apple server error, try again later")
 
 	default:
 		return ErrUnexpectedSigninResponse
