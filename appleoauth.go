@@ -1,6 +1,7 @@
 // Copyright 2021 The Go Darwin Authors
 // SPDX-License-Identifier: BSD-3-Clause
 
+// Package appleoauth provides the user/password login to Apple web service.
 package appleoauth
 
 import (
