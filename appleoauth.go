@@ -110,8 +110,8 @@ type iTuneConnectResponse struct {
 	AuthServiceKey string `json:"authServiceKey"`
 }
 
-// GetServiceKey gets serviceKey to authenticate to Apple's web service from the iTunes Connect endpoint.
-func (c *Client) GetServiceKey(ctx context.Context) error {
+// FetchServiceKey fetch serviceKey to authenticate to Apple's web service from the iTunes Connect endpoint.
+func (c *Client) FetchServiceKey(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoints[iTunesConnect], nil)
 	if err != nil {
 		return err
@@ -170,9 +170,9 @@ type signinResponse struct {
 
 // ServiceError represents a Apple service error.
 type ServiceError struct {
-	Code    string `json:"code"`
-	Title   string `json:"title"`
-	Message string `json:"message"`
+	Code    string `json:"code,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 // Error returns the string representation of a ServiceError.
@@ -180,8 +180,8 @@ func (e ServiceError) Error() string {
 	return fmt.Sprintf("(%s): (%s)", e.Code, e.Message)
 }
 
-// Signin signins to Apple's web service.
-func (c *Client) Signin(ctx context.Context, account *Account) error {
+// Login logins to Apple's web service.
+func (c *Client) Login(ctx context.Context, account *Account) error {
 	if !account.Valid() {
 		user, ok := os.LookupEnv(EnvIcloudUserName)
 		if !ok {
@@ -260,7 +260,8 @@ func (c *Client) Signin(ctx context.Context, account *Account) error {
 		return ErrUnexpectedSigninResponse
 	}
 
-	logger.Info("successful signin")
+	logger.Info("successful login")
+
 	return nil
 }
 
