@@ -132,7 +132,7 @@ func (c *Client) handleTwoFactor(ctx context.Context, authResp *authOptionsRespo
 		}
 	}
 
-	return c.storeSession(ctx)
+	return nil
 }
 
 // validCode reports whether the code is valid.

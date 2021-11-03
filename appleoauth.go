@@ -89,6 +89,9 @@ type Client struct {
 	username   string
 	sessionID  string
 	scnt       string
+
+	userEmail string
+	provider  *olympusProvider
 }
 
 // NewClient returns the new Client.
@@ -240,7 +243,9 @@ func (c *Client) Signin(ctx context.Context, account *Account) error {
 		return fmt.Errorf("status code is %s", http.StatusText(code))
 
 	case http.StatusConflict: // 409
-		return c.handleTwoStepOrFactor(ctx, resp)
+		if err := c.handleTwoStepOrFactor(ctx, resp); err != nil {
+			return err
+		}
 
 	case http.StatusPreconditionFailed: // 412
 		if !authTypes[signinResp.AuthType] {
@@ -257,4 +262,47 @@ func (c *Client) Signin(ctx context.Context, account *Account) error {
 
 	logger.Info("successful signin")
 	return nil
+}
+
+type olympusProvider struct {
+	ProviderID   string `json:"providerId,omitempty"`
+	Name         string `json:"name,omitempty"`
+	ContentTypes string `json:"contentTypes,omitempty"`
+}
+
+type olympusSessionResponse struct {
+	User *struct {
+		EmailAddress string `json:"emailAddress,omitempty"`
+	} `json:"user,omitempty"`
+
+	Provider *olympusProvider `json:"provider,omitempty"`
+}
+
+// FetchOlympusSession fetch the "itctx" from the new "olympus" (22nd May 2017) API endpoint.
+func (c *Client) FetchOlympusSession(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoints[olympusSession], nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var olympusResp olympusSessionResponse
+	if err := json.NewDecoder(resp.Body).Decode(&olympusResp); err != nil {
+		return fmt.Errorf("could not decode request body: %w", err)
+	}
+
+	if user := olympusResp.User; user != nil {
+		c.userEmail = user.EmailAddress
+	}
+
+	if olympusProvider := olympusResp.Provider; olympusProvider != nil {
+		c.provider = olympusProvider
+	}
+
+	return c.storeSession(ctx)
 }
